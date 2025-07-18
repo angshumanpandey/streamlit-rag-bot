@@ -40,7 +40,7 @@ if uploaded_file is not None and api_key:
     if query:
         docs_with_scores = vectorstore.similarity_search(query, k=3)
 
-        llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
         chain = load_qa_chain(llm, chain_type="stuff")
 
         response = chain.run(input_documents=docs_with_scores, question=query)

@@ -1,4 +1,5 @@
-
+# In[1]:
+!pip install -qU langchain-google-genai
 # In[2]:
 
 

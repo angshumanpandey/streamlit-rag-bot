@@ -1,107 +1,62 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
-
-# In[2]:
-
-
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain 
-import os
-
-
-# In[3]:
-
-
-os.environ["GOOGLE_API_KEY"]="AIzaSyDcdj_rMyAJPasM9EX8qPWA7cbnOFro4eM"
-
-
-# In[6]:
-
-
-prompt = PromptTemplate.from_template("Answer the following query: {query}")
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
-chain = LLMChain(llm=llm, prompt=prompt)
-query = "What is the Capital of France?"
-response = chain.run(query=query)
-print("Chatbot Response:", response)
-
-
-
-# In[10]:
-
-
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import streamlit as st
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import GoogleGenerativeAIEmbeddings
 from langchain.vectorstores import FAISS
-from langchain.document_loaders import PyPDFLoader
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains.question_answering import load_qa_chain
 import os
 
+# Set page config
+st.set_page_config(page_title="Gemini RAG Chatbot", layout="centered")
 
-# In[12]:
+# Title
+st.title("📄🔍 Gemini RAG ChatBot")
 
+# Get Google API key from user securely
+api_key = st.text_input("Enter your Google Generative AI API Key", type="password")
+if api_key:
+    os.environ["GOOGLE_API_KEY"] = api_key
 
-pdf_path=r"C:\Users\SS458131\Downloads\ABCL010425ABCL-007 Mandatory Leave Guidelines_Final.pdf"
-loader = PyPDFLoader(pdf_path)
-documents = loader.load()
+# File uploader
+uploaded_file = st.file_uploader("Upload your PDF file here", type="pdf")
 
+if uploaded_file is not None and api_key:
 
-# In[14]:
+    # Save uploaded file temporarily
+    with open("uploaded_pdf.pdf", "wb") as f:
+        f.write(uploaded_file.read())
 
+    # Load and split PDF content
+    loader = PyPDFLoader("uploaded_pdf.pdf")
+    pages = loader.load()
 
-#Split Text into Chunks 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-chunks= text_splitter.split_documents(documents)
+    # Split text
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    docs = text_splitter.split_documents(pages)
 
-#Initialize Google AI embeddings for vector store
-embedding_model = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    # Embeddings and vectorstore
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    vectorstore = FAISS.from_documents(docs, embeddings)
 
-# Create in-memory vector store (FAISS)
-vector_store = FAISS.from_documents(chunks, embedding_model)
+    # User query
+    query = st.text_input("Ask a question from the PDF")
 
-#Function to answer multiple questions using RAG
+    if query:
+        docs_with_scores = vectorstore.similarity_search(query, k=3)
 
-def ask_rag_batch(queries):
-    results = {}
-    for query in queries:
-        # Retrieve relevant documents
-        docs = vector_store.similarity_search(query, k=2)
-        context ="\n\n".join([doc.page_content for doc in docs])
-        
-        # Construct the final prompt 
-        prompt =f"Use the following document excerpts to answer the question:\n\n{context}\n\nQuestion: {query}\nAnswer:"
-        
-        # Generate answer 
-        response = llm.invoke(prompt)
-        results[query] = response.content.strip()
-        
-    return results
+        # Load Gemini model and QA chain
+        llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+        chain = load_qa_chain(llm, chain_type="stuff")
 
+        # Get answer
+        response = chain.run(input_documents=docs_with_scores, question=query)
 
-# In[21]:
+        # Show response
+        st.markdown("### 💬 Answer")
+        st.write(response)
 
-
-# Define batch of questions 
-batch_queries = [
-    "What is the document about?",
-    "What are the key objective of Mandatory Leave guidelines?",
-    "Which employees comes under the applicability of Mandatory Leave guidelines?",
-    "Summarize this document for m in 3 lines",
-    "what is the issue date of this document",
-    "WHat are the guidelines?"
-     ]
-
-# Run batch RAG query
-answers = ask_rag_batch(batch_queries)
-
-#print output
-print("\nBatch RAG Answers:")
-for query, answer in answers.items():
-    print(f"\nQuestion: {query}\nAnswer: {answer}\n")
-
-
-
-
-
+elif uploaded_file is None and api_key:
+    st.warning("Please upload a PDF file to continue.")
+elif uploaded_file and not api_key:
+    st.warning("Please enter your Google Generative AI API key.")

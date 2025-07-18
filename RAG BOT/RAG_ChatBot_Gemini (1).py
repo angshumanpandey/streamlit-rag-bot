@@ -43,7 +43,7 @@ import os
 # In[12]:
 
 
-pdf_path=r"C:\Users\ss458132\Downloads\ABCL010425ABCL-007 Mandatory Leave Guidelines_Final.pdf"
+pdf_path=r"C:\Users\SS458131\Downloads\ABCL010425ABCL-007 Mandatory Leave Guidelines_Final.pdf"
 loader = PyPDFLoader(pdf_path)
 documents = loader.load()
 

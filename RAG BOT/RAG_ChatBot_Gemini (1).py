@@ -15,7 +15,7 @@ import os
 # In[3]:
 
 
-os.environ["GOOGLE_API_KEY"]="AIzaSyD63zXmYgnp0wGWmjYJnvO5olDignoGvZM"
+os.environ["GOOGLE_API_KEY"]="AIzaSyDcdj_rMyAJPasM9EX8qPWA7cbnOFro4eM"
 
 
 # In[6]:

@@ -29,14 +29,6 @@ response = chain.run(query=query)
 print("Chatbot Response:", response)
 
 
-# # RAG implementation using Gemini
-
-# In[7]:
-
-
-get_ipython().system('pip install -qU langchain-google-genai langchain-community pypdf')
-get_ipython().system('pip install --quiet faiss-cpu')
-
 
 # In[10]:
 
@@ -109,8 +101,6 @@ print("\nBatch RAG Answers:")
 for query, answer in answers.items():
     print(f"\nQuestion: {query}\nAnswer: {answer}\n")
 
-
-# In[ ]:
 
 
 
